@@ -1,11 +1,18 @@
 import json
 # import calendar
+import sqlalchemy
 from datetime import timedelta
 from datetime import datetime
 from airflow import DAG
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.python_operator import PythonOperator
 import pandas as pd
+import matplotlib.pyplot as plt
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
 
 
 
@@ -52,30 +59,39 @@ def agg_data():
               'w') as f:
         f.write(df13.to_csv())
 
-#
-# def inset_data():
-#     # engine = sqlalchemy.create_engine('mysql+pymysql://root:zipcoder@localhost/Youtube.youtubeStats')
-#     # df_sql = pd.read_sql_table('match_results', engine)
-#     sql_config = {
-#         'server': 'localhost',
-#         'database': 'Youtube',
-#         'username': 'root',
-#         'password': 'zipcoder'
-#     }
-#     table_name = 'youtubeStats'
-#     df = pd.DataFrame(np.random.randint(-100, 100, size=(100, 4)),
-#                       columns=list('ABCD'))
-#
-#     cur = db.cursor()
-#
-#     for row in cur.fetchall():
-#         print
-#         row
-#
-#     db.close()
+
+def save_report():
+    df13 = pd.read_csv('/Users/amishra/DEV/DataEngineering.Labs.AirflowProject/DataEngg-Airflow/dataclean/USvideos_aggregated.csv')
+    df14 = df13.iloc[:, 0:1]
+    fig, ax = plt.subplots(figsize=(15, 7))
+    df14.groupby(['month', 'category_title']).sum()['video_id'].unstack().plot(ax=ax)
+    ax.set_xlabel('Month')
+    ax.set_ylabel('Number of videos of particular category')
+    report_name = "/Users/amishra/DEV/AirflowProject/youtube_analysis_" + str(date.today().strftime("%Y%m%d"))
+    report_for_2018 = fig.savefig(report_name, dpi=300, bbox_inches='tight')
 
 
+# def send_report():
+#     fromaddr = "apoorvashukla88@gmail.com"
+#     toaddr = "apoorvashukla88@gmail.com"
+#     msg = MIMEMultipart()
+#     msg['From'] = fromaddr
+#     msg['To'] = toaddr
+#     msg['Subject'] = "Report :Youtube Trending videos wrt Month "
+#     body = "PFA"
+#     msg.attach(MIMEText(body, 'plain'))
+#     report_name = "/Users/amishra/DEV/AirflowProject/youtube_analysis_" + str(date.today().strftime("%Y%m%d"))
+#     filename = report_name
+#     attachment = open(report_name, "rb")
+#     s = smtplib.SMTP('smtp.gmail.com', 587)
+#     s.starttls()
+#     s.login(fromaddr, "Password_of_the_sender")
+#     text = msg.as_string()
+#     s.sendmail(fromaddr, toaddr, text)
+#     s.quit()
 
+def send_report():
+    return "send report"
 
 default_args = {
     'owner': 'Apoorva',
@@ -93,11 +109,7 @@ dag = DAG(
     description='Youtube Trending Videos Analysis',
 )
 
-t3 = PythonOperator(
-    task_id='Persist_data',
-    python_callable=category_data,
-    dag=dag,
-)
+
 
 t1 = BashOperator(
     task_id='download_from_source',
@@ -111,6 +123,11 @@ t2 = BashOperator(
     dag=dag,
 )
 
+t3 = PythonOperator(
+    task_id='Persist_data',
+    python_callable=insert_raw_data,
+    dag=dag,
+)
 # t3 = PythonOperator(
 #     task_id='ReadFile',
 #     python_callable=read_data,
@@ -129,9 +146,22 @@ t5 = PythonOperator(
     dag=dag,
 )
 
+t6 = PythonOperator(
+    task_id='SaveReport',
+    python_callable=save_report,
+    dag=dag,
+)
+
+t7 = PythonOperator(
+    task_id='SendReport',
+     python_callable=send_report,
+    dag=dag,
+
+)
 
 
 
 
 
-t1 >> t2 >> t3 >> t4 >> t5
+
+t1 >> t2 >> t3 >> t4 >> t5 >> t6 >> t7
