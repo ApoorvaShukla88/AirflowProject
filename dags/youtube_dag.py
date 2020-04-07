@@ -121,7 +121,7 @@ t1 = BashOperator(
 
 t2 = BashOperator(
     task_id='unzip_downloaded_files',
-    bash_command='unzip /Users/amishra/DEV/DataEngineering.Labs.AirflowProject/DataEngg-Airflow/youtube-new.zip',
+    bash_command='unzip /Users/amishra/DEV/DataEngineering.Labs.AirflowProject/DataEngg-Airflow/youtube-new.zip -d Users/amishra/DEV/DataEngineering.Labs.AirflowProject/DataEngg-Airflow/youtube-new/',
     dag=dag,
 )
 
