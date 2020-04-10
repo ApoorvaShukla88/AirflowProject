@@ -25,7 +25,8 @@ def unzip_files(zipped_file):
 
 
 def insert_raw_data(raw_data_file,country):
-    engine = sqlalchemy.create_engine('mysql+pymysql://root:zipcoder@localhost/testDB')
+    engine = sqlalchemy.create_engine('postgresql+psycopg2://amishra:pass@localhost:5432/airflow_backend')
+    # engine = sqlalchemy.create_engine('mysql+pymysql://root:zipcoder@localhost/testDB')
     df = pd.read_csv(raw_data_file, delimiter=',')
 
     with engine.connect() as conn, conn.begin():
@@ -92,7 +93,7 @@ dag = DAG(
 
 t1 = BashOperator(
     task_id='download_from_source',
-    bash_command='kaggle datasets download datasnaek/youtube-new -p /Users/amishra/DEV/DataEngineering.Labs.AirflowProject/DataEngg-Airflow',
+    bash_command='/Users/amishra/opt/anaconda3/bin/kaggle datasets download datasnaek/youtube-new -p /Users/amishra/DEV/DataEngineering.Labs.AirflowProject/DataEngg-Airflow',
     dag=dag,
 )
 

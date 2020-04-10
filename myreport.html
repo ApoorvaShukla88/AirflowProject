@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!--    <meta charset="UTF-8">-->
+<!--    <title>{{ Youtube Trending Videos Analysis }}</title>-->
+</head>
+<body>
+    <h1>Youtube Trending Videos Analysis</h1>
+    <table>
+        <tr>
+            {% for column in df.columns %}
+            <th>{{ column }}</th>
+            {% endfor %}
+        </tr>
+        {% for idx, row in df.iterrows() %}
+        <tr>
+            {% for colname in df.columns %}
+            <td>${{ row[colname] | round(1) }}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
