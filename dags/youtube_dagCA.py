@@ -16,7 +16,7 @@ from datetime import date
 import airflow.hooks.S3_hook
 
 country = 'CA'
-root_path = '/Users/amishra/DEV/DataEngineering.Labs.AirflowProject/DataEngg-Airflow/'
+root_path = '/home/ec2-user/AirflowProject/'
 date_formatted = str(date.today().strftime("%Y%m%d"))
 
 template_path = root_path + 'templates/'
@@ -43,12 +43,12 @@ def unzip_files(zipped_file):
 
 
 def insert_raw_data(input_file, country_code):
-    engine = sqlalchemy.create_engine('postgresql+psycopg2://amishra:pass@localhost:5432/airflow_backend')
-    df = pd.read_csv(input_file, delimiter=',')
+    engine = sqlalchemy.create_engine(
+        'postgresql+psycopg2://apoorva88:password@airflow-db.cwbd00hagvg6.us-east-1.rds.amazonaws.com/airflow_backend')
+    df = pd.read_csv(raw_file,delimiter=',')
 
     with engine.connect() as conn, conn.begin():
-        df.to_sql('raw_data_'+country_code, conn, if_exists='replace')
-
+        df.to_sql('raw_data_' + country , conn, if_exists='replace')
 
 def category_data(input_file, output_file):
     with open(input_file, 'r') as f:
@@ -128,7 +128,7 @@ def upload_file_to_S3_with_hook(filename, key, bucket_name):
 default_args = {
     'owner': 'Apoorva',
     'depends_on_past': False,
-    'start_date': datetime.now(),
+    'start_date': datetime.strptime('04122020','%m%d%Y'),
     'retries': 0,
     'retry_delay': timedelta(minutes=1),
     'on_failure_callback': None,
@@ -143,7 +143,7 @@ dag = DAG(
 
 t1 = BashOperator(
     task_id='Download-From-Source',
-    bash_command='/Users/amishra/opt/anaconda3/bin/kaggle datasets download datasnaek/youtube-new -p ' + raw_file_path,
+    bash_command='/bin/true',
     dag=dag,
 )
 
@@ -208,7 +208,6 @@ t8 = PythonOperator(
         'bucket_name': 'apoorva.first.boto.s3.bucket'},
     dag=dag
 )
-
 
 
 t1 >> t2 >> t3 >> t4 >> t5 >> t6 >> t7 >> t8
