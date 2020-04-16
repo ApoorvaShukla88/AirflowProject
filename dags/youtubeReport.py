@@ -1,19 +1,10 @@
-import jinja2
-import pdfkit
-import json
-from zipfile import ZipFile
-import sqlalchemy
 from datetime import timedelta
 from datetime import datetime
 from airflow import DAG
 from airflow.operators.bash_operator import BashOperator
-from airflow.operators.papermill_operator import PapermillOperator
 from airflow.operators.python_operator import PythonOperator
-from airflow.operators.dummy_operator import DummyOperator
-import pandas as pd
-import matplotlib.pyplot as plt
-from datetime import date
 import papermill as pm
+import boto3
 
 
 def jupyter_output_report():
@@ -22,6 +13,12 @@ def jupyter_output_report():
         '/Users/amishra/DEV/AirflowProject/YTAnalysis-Out.ipynb',
         parameters={'root_path': '/Users/amishra/DEV/DataEngineering.Labs.AirflowProject/DataEngg-Airflow/'}
     )
+
+
+def upload_file_to_S3(filename, key, bucket_name):
+    s3 = boto3.resource('s3')
+    s3.Bucket(bucket_name).upload_file(filename, key)
+
 
 
 default_args = {
@@ -49,9 +46,23 @@ t1 = PythonOperator(
 )
 
 t2 = BashOperator(
-    task_id='ConvertReporttoHTML',
+    task_id='ConvertReportToPDF',
     bash_command='export PATH="$PATH:/usr/local/texlive/2020/bin/x86_64-darwin" && jupyter nbconvert --to pdf --output-dir /Users/amishra/DEV/AirflowProject /Users/amishra/DEV/AirflowProject/YTAnalysis-Out.ipynb',
     dag=dag,
 )
 
-t1 >> t2
+
+t3 = PythonOperator(
+    task_id='upload_to_S3',
+    python_callable=upload_file_to_S3,
+    op_kwargs={
+        'filename': '/Users/amishra/DEV/AirflowProject/YTAnalysis-Out.pdf',
+        'key': 'YTAnalysis-Out.pdf',
+        'bucket_name': 'apoorva.first.boto.s3.bucket'},
+    dag=dag
+)
+
+
+
+
+t1 >> t2 >> t3

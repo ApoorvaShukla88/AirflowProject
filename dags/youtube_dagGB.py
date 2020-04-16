@@ -1,3 +1,4 @@
+import boto3
 import jinja2
 import pdfkit
 import json
@@ -113,6 +114,12 @@ def make_report(input_raw_file, input_agg_file, input_html_file, input_report_fi
 
     pdfkit.from_file(input_html_file, output_pdf_file)
 
+
+def upload_file_to_S3(filename, key, bucket_name):
+    s3 = boto3.resource('s3')
+    s3.Bucket(bucket_name).upload_file(filename, key)
+
+
 default_args = {
     'owner': 'Apoorva',
     'depends_on_past': False,
@@ -187,11 +194,14 @@ t7 = PythonOperator(
     dag=dag,
 )
 
-t8 = DummyOperator(
-    task_id='SendReport',
-    dag=dag,
-
-
+t8 = PythonOperator(
+    task_id='Upload_to_S3',
+    python_callable=upload_file_to_S3,
+    op_kwargs={
+        'filename': pdf_report_file,
+        'key': 'YTAnalysisGB-Out.pdf',
+        'bucket_name': 'apoorva.first.boto.s3.bucket'},
+    dag=dag
 )
 
 

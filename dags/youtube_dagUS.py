@@ -1,3 +1,4 @@
+import boto3
 import jinja2
 import pdfkit
 import json
@@ -7,11 +8,13 @@ from datetime import timedelta
 from datetime import datetime
 from airflow import DAG
 from airflow.operators.bash_operator import BashOperator
+from airflow.operators.papermill_operator import PapermillOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.operators.dummy_operator import DummyOperator
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import date
+import papermill as pm
 
 country = 'US'
 root_path = '/Users/amishra/DEV/DataEngineering.Labs.AirflowProject/DataEngg-Airflow/'
@@ -113,6 +116,13 @@ def make_report(input_raw_file, input_agg_file, input_html_file, input_report_fi
 
     pdfkit.from_file(input_html_file, output_pdf_file)
 
+
+def upload_file_to_S3(filename, key, bucket_name):
+    s3 = boto3.resource('s3')
+    s3.Bucket(bucket_name).upload_file(filename, key)
+
+
+
 default_args = {
     'owner': 'Apoorva',
     'depends_on_past': False,
@@ -176,6 +186,8 @@ t6 = PythonOperator(
     dag=dag,
 )
 
+
+
 t7 = PythonOperator(
     task_id='Generate-Report-PDF',
     python_callable=make_report,
@@ -187,12 +199,17 @@ t7 = PythonOperator(
     dag=dag,
 )
 
-t8 = DummyOperator(
-    task_id='SendReport',
-    dag=dag,
 
-
+t8 = PythonOperator(
+    task_id='Upload_to_S3',
+    python_callable=upload_file_to_S3,
+    op_kwargs={
+        'filename': pdf_report_file,
+        'key': 'YTAnalysisUS-Out.pdf',
+        'bucket_name': 'apoorva.first.boto.s3.bucket'},
+    dag=dag
 )
+
 
 
 
